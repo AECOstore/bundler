@@ -6,15 +6,25 @@
     "piral"
   ],
   "dependencies": {
+    "@babel/preset-env": "^7.19.4",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "@comunica/query-sparql-link-traversal": "^0.0.2-alpha.6.0",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
+    "@frogcat/ttl2jsonld": "^0.0.8",
     "@mui/material": "^5.10.6",
+    "buffer": "^6.0.3",
+    "jsonld": "^8.1.0",
     "piral": "0.14.31",
+    "piral-cli-webpack5": "^0.14.32",
     "piral-containers": "^0.14.32",
     "piral-oauth2": "^0.14.32",
     "piral-oidc": "^0.14.32",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "stream-browserify": "^3.0.0",
+    "url": "^0.11.0"
   },
   "scripts": {
     "start": "piral debug --port 1000",
@@ -40,7 +50,6 @@
     "@types/react-router": "^5",
     "@types/react-router-dom": "^5",
     "piral-cli": "0.14.31",
-    "piral-cli-webpack": "0.14.31",
     "typescript": "latest"
   }
 }

@@ -1,9 +1,14 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "noImplicitAny": false,
+    "removeComments": false,
+    "noLib": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "target": "es6",
     "sourceMap": true,
-    "outDir": "./lib",
+    "outDir": "./dist",
     "skipLibCheck": true,
     "lib": ["dom", "es2018"],
     "moduleResolution": "node",
@@ -14,7 +19,7 @@
   },
   "include": [
     "./src"
-  ],
+, "../../shell/src/sharedComponents"  ],
   "exclude": [
     "node_modules"
   ]

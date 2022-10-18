@@ -1,4 +1,4 @@
-import * as piral_utils from 'piral-core/esm/utils/'
+import * as piral from 'piral-core'
 import { PiralPlugin, PiletApi } from 'piral'
 import * as React from 'react';
 
@@ -28,8 +28,8 @@ function withState(App, {app, state, actions}) {
 }
 
 function setData(name, value, context, options?) {
-  const { target = 'memory', expires } = Object(piral_utils["createDataOptions"])(options);
-  const expiration = Object(piral_utils["getDataExpiration"])(expires);
+  const { target = 'memory', expires } = Object(piral["createDataOptions"])(options);
+  const expiration = Object(piral["getDataExpiration"])(expires);
   return context.tryWriteDataItem(name, value, "global", target, expiration);
 }
 

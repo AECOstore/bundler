@@ -1,16 +1,23 @@
 import 'piral/polyfills';
 import * as React from 'react'
-import { createPiral, Piral, SetComponent, LoadingIndicatorProps, SetRoute, Dashboard , PiralInstance, PiletApi, PiralPlugin} from 'piral';
+import { createPiral, Piral, SetComponent, LoadingIndicatorProps, SetRoute, Dashboard, PiralInstance, PiletApi, PiralPlugin } from 'piral';
 import { layout, Layout } from './layout';
 import { ErrorInfo, errors } from './layout/Error'
 import { render } from 'react-dom';
 import { DashboardContainer, DashboardTile } from './layout/Dashboard';
-import { MenuContainer} from './layout/Menu'
+import { MenuContainer } from './layout/Menu'
 import { NotificationsHost, NotificationsToast } from './layout/Notifications';
 import CONSTANTS from './constants.js'
 import { createContainersApi } from 'piral-containers';
+import * as piralcore from "piral-core"
+import jsonld from 'jsonld'
+import { createStateApi } from './apis'
+import { getConfigQuery } from './queries'
 
-import {createStateApi} from './apis'
+const ttl2jsonld = require('@frogcat/ttl2jsonld').parse;
+const QueryEngine = require('@comunica/query-sparql-link-traversal').QueryEngine;
+const myEngine = new QueryEngine();
+
 
 sessionStorage.setItem('dbg:view-state', "off")
 
@@ -32,7 +39,7 @@ const Loader: React.FC<LoadingIndicatorProps> = () => (
   </div>
 );
 
-function makePiral(feedUrl) {
+async function makePiral(feedUrl) {
 
   // ugly, make better when time ...
   function reshapeConfig(config) {
@@ -68,33 +75,75 @@ function makePiral(feedUrl) {
     return recursiveArray;
   }
 
+  function configFromStream(quadStream) {
+    return new Promise((resolve, reject) => {
+      let configuration = ""
+      quadStream.on('data', (quad) => {
+        configuration += `<${quad.subject.value}> `
+        configuration += `<${quad.predicate.value}> `
+        if (quad.object.value.startsWith("http")) {
+          configuration += `<${quad.object.value}> . `
+        } else {
+          configuration += `"${quad.object.value}" . `
+        }
+      })
+      quadStream.on('end', () => resolve(configuration))
+      quadStream.on('error', (err) => {
+        console.log('error', err)
+        reject(err)
+      })
+    })
+  }
 
+  async function remapConfigToJSON(feedUrl): Promise<any> {
+    const query = getConfigQuery
+    const quadStream = await myEngine.queryQuads(query, { sources: [feedUrl], lenient: true })
+    const config = await configFromStream(quadStream)
+    const jsonConfig = ttl2jsonld(config)
+    const context = {
+      "@context": {
+        "link": {"@id": "http://w3id.org/mfe#code", "@type": "@id"},
+        "spec": "http://usefulinc.com/ns/doap#revision",
+        "name": "http://www.w3.org/2000/01/rdf-schema#label",
+        "route": "http://w3id.org/mfe#registersRoute",
+        "type": {"@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "@type": "@id"},
+        "hosts": {"@id": "http://w3id.org/mfe#hosts", "@type": "@id"},
+        "initialColumns": "http://w3id.org/mfe#initialColumns",
+        "initialRows": "http://w3id.org/mfe#initialRows"
+      }
+    }
+    const flattened = await jsonld.flatten(jsonConfig)
+    const compacted = await jsonld.compact(flattened, context)
+    console.log('JSON.stringify(compacted, null, 4)', JSON.stringify(compacted, null, 4))
+    const piralConfig = {
+      items : compacted["@graph"] || [compacted],
+      feed: "sample"
+    }
+    return piralConfig
+  }
   
-
+  const configuration = await remapConfigToJSON(feedUrl)
   const p = createPiral({
     requestPilets() {
-      return fetch(feedUrl)
-        .then((res) => res.json())
-        .then((res) => {
-          const items = reshapeConfig(res)
-          return items
-        })
+      return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
+      // return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
     },
     plugins: [createStateApi(), createContainersApi()]
   });
-
   p.root.setData("CONSTANTS", CONSTANTS)
+  p.root.setData("CONFIGURATION", configuration)
   return p
 }
 
 const App = () => {
   const [feedUrl, setFeedUrl] = React.useState(CONSTANTS.FEEDURL)
-  const [piral, setPiral] = React.useState(makePiral(feedUrl))
+  const [piral, setPiral] = React.useState(undefined)
 
   React.useEffect(() => {
     if (piral === undefined && feedUrl) {
-      const p = makePiral(feedUrl)
-      setPiral(p)
+      // const p = makePiral(feedUrl)
+      makePiral(feedUrl).then(res => setPiral(res))
+      // setPiral(p)
     }
   }, [piral])
 
@@ -106,17 +155,17 @@ const App = () => {
         </div>
       ) : (
         <div>
-
+          Loading...
         </div>
       )}
       {/* <input type="text" defaultValue={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
       <button onClick={() => setPiral(undefined)}>load</button> */}
-    </div> 
+    </div>
   )
 }
 
 
-const PiralComponent = ({ piral }: {piral: PiralInstance}) => {
+const PiralComponent = ({ piral }: { piral: PiralInstance }) => {
   return (
     <Piral instance={piral}>
       <SetComponent name="Layout" component={Layout} />
