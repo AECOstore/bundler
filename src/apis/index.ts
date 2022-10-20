@@ -1,1 +1,1 @@
-export {createStateApi} from "./globalStateApi"
+export {createAecoStoreApi} from "./aecostoreApi"

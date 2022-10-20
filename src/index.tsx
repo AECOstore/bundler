@@ -7,11 +7,11 @@ import { render } from 'react-dom';
 import { DashboardContainer, DashboardTile } from './layout/Dashboard';
 import { MenuContainer } from './layout/Menu'
 import { NotificationsHost, NotificationsToast } from './layout/Notifications';
-import CONSTANTS from './constants.js'
+import CONSTANTS from './constants'
 import { createContainersApi } from 'piral-containers';
 import * as piralcore from "piral-core"
 import jsonld from 'jsonld'
-import { createStateApi } from './apis'
+import { createAecoStoreApi } from './apis'
 import { getConfigQuery } from './queries'
 
 const ttl2jsonld = require('@frogcat/ttl2jsonld').parse;
@@ -114,7 +114,6 @@ async function makePiral(feedUrl) {
     }
     const flattened = await jsonld.flatten(jsonConfig)
     const compacted = await jsonld.compact(flattened, context)
-    console.log('JSON.stringify(compacted, null, 4)', JSON.stringify(compacted, null, 4))
     const piralConfig = {
       items : compacted["@graph"] || [compacted],
       feed: "sample"
@@ -128,11 +127,19 @@ async function makePiral(feedUrl) {
       return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
       // return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
     },
-    plugins: [createStateApi(), createContainersApi()]
+    plugins: [createAecoStoreApi(), createContainersApi()]
   });
   p.root.setData("CONSTANTS", CONSTANTS)
   p.root.setData("CONFIGURATION", configuration)
   return p
+}
+
+function getRoutes(items) {
+  const routes = {}
+  items.filter(item => item.route).forEach(item => {
+    routes[item.route] = item.hosts
+  })
+  return routes
 }
 
 const App = () => {
@@ -142,7 +149,10 @@ const App = () => {
   React.useEffect(() => {
     if (piral === undefined && feedUrl) {
       // const p = makePiral(feedUrl)
-      makePiral(feedUrl).then(res => setPiral(res))
+      makePiral(feedUrl).then(res => {
+        setPiral(res)
+        const routes = getRoutes(res.root.getData("CONFIGURATION").items)
+      })
       // setPiral(p)
     }
   }, [piral])
@@ -166,6 +176,8 @@ const App = () => {
 
 
 const PiralComponent = ({ piral }: { piral: PiralInstance }) => {
+
+  
   return (
     <Piral instance={piral}>
       <SetComponent name="Layout" component={Layout} />

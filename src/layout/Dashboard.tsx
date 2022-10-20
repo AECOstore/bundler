@@ -42,6 +42,7 @@ import * as React from 'react'
 // );
 
 export const DashboardContainer: React.FC<DashboardContainerProps> = ({ children }) => {
+  console.log('children', children)
   return <div>
     <div className="tiles">
       {children}
