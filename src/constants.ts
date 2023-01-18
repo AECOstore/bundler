@@ -7,7 +7,8 @@ const data = {
     SPARQL_ENDPOINTS: "http://example.org/sparql_endpoints",
     ACTIVE_DOCUMENTS: "http://example.org/active_documents",
     FEEDURL: "http://localhost:3000/aecostore/configurations/config_demo2",
-    SELECTED_CONCEPTS: "http://example.org/selected_concepts"
+    SELECTED_CONCEPTS: "http://example.org/selected_concepts",
+    SELECTED_REFERENCES: "http://example.org/selected_references"
 }
 
 export default data

@@ -1,5 +1,5 @@
 export const getConfigQuery = `
-PREFIX mfe: <http://w3id.org/mfe#>
+PREFIX mfe: <http://w3id.org/mifesto#>
 PREFIX pav: <http://purl.org/pav/>
 PREFIX doap: <http://usefulinc.com/ns/doap#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -18,7 +18,7 @@ CONSTRUCT {
     mfe:hosts+ ?child .
 
   ?child a ?type ;
-    mfe:module ?module .
+    mfe:hasModule ?module .
   
   ?module pav:hasVersion ?version ;
    rdfs:label ?name .
@@ -27,11 +27,11 @@ CONSTRUCT {
     mfe:code ?link .
 
   OPTIONAL {
-    ?version mfe:registersRoute ?route .
+    ?version mfe:hasRoute ?route .
   }
 
   OPTIONAL {
-    ?child mfe:dimensions ?dim .
+    ?child mfe:hasDimensions ?dim .
     ?dim mfe:initialColumns ?col ;
       mfe:initialRows ?row .
   }

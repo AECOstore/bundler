@@ -102,14 +102,14 @@ async function makePiral(feedUrl) {
     const jsonConfig = ttl2jsonld(config)
     const context = {
       "@context": {
-        "link": {"@id": "http://w3id.org/mfe#code", "@type": "@id"},
+        "link": {"@id": "http://w3id.org/mifesto#code", "@type": "@id"},
         "spec": "http://usefulinc.com/ns/doap#revision",
         "name": "http://www.w3.org/2000/01/rdf-schema#label",
-        "route": "http://w3id.org/mfe#registersRoute",
+        "route": "http://w3id.org/mifesto#registersRoute",
         "type": {"@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "@type": "@id"},
-        "hosts": {"@id": "http://w3id.org/mfe#hosts", "@type": "@id"},
-        "initialColumns": "http://w3id.org/mfe#initialColumns",
-        "initialRows": "http://w3id.org/mfe#initialRows"
+        "hosts": {"@id": "http://w3id.org/mifesto#hosts", "@type": "@id"},
+        "initialColumns": "http://w3id.org/mifesto#initialColumns",
+        "initialRows": "http://w3id.org/mifesto#initialRows"
       }
     }
     const flattened = await jsonld.flatten(jsonConfig)
@@ -118,14 +118,14 @@ async function makePiral(feedUrl) {
       items : compacted["@graph"] || [compacted],
       feed: "sample"
     }
+    console.log('piralConfig', piralConfig)
     return piralConfig
   }
   
   const configuration = await remapConfigToJSON(feedUrl)
   const p = createPiral({
     requestPilets() {
-      return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
-      // return remapConfigToJSON(feedUrl).then(i => {console.log('i', i); return i.items})
+      return remapConfigToJSON(feedUrl).then(i => i.items)
     },
     plugins: [createAecoStoreApi(), createContainersApi()]
   });
@@ -145,6 +145,7 @@ function getRoutes(items) {
 const App = () => {
   const [feedUrl, setFeedUrl] = React.useState(CONSTANTS.FEEDURL)
   const [piral, setPiral] = React.useState(undefined)
+  const [conceptLoading, setConceptLoading] = React.useState(false)
 
   React.useEffect(() => {
     if (piral === undefined && feedUrl) {
@@ -161,7 +162,8 @@ const App = () => {
     <div>
       {piral ? (
         <div>
-          <PiralComponent piral={piral} />
+          {conceptLoading ? <p>Interlinking concepts...</p> : <></>}
+          <PiralComponent piral={piral} setConceptLoading={setConceptLoading}/>
         </div>
       ) : (
         <div>
@@ -174,9 +176,16 @@ const App = () => {
   )
 }
 
-
-const PiralComponent = ({ piral }: { piral: PiralInstance }) => {
-
+const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, setConceptLoading }) => {
+  piral.on('store-data', async ({ name, value }) => {
+    if (name == CONSTANTS.SELECTED_REFERENCES) {
+      setConceptLoading(true)
+      const p = piral.root.getData(CONSTANTS.ACTIVE_PROJECT)
+      const concepts = await piral.root.findConceptsById(value, p)
+      piral.root.setDataGlobal(CONSTANTS.SELECTED_CONCEPTS, concepts)
+      setConceptLoading(false)
+      }
+  });
   
   return (
     <Piral instance={piral}>
