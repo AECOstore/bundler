@@ -1,1 +1,1 @@
-# The Shell of the AECOstore
+# Shell implementation of the MIFESTO framework

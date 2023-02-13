@@ -181,7 +181,7 @@ async function findSparqlSatellite(webId, queryEngine?: QueryEngine) {
 
 function makeSession() {
   let token = cookies.get(constants.ACCESS_TOKEN)
-  if (token) {
+  if (token != "undefined") {
     const decoded = jwt_decode<any>(token)
     const webId = decoded.webid
 
