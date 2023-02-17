@@ -362,7 +362,7 @@ async function doQuery(ordered) {
         // console.log('results', JSON.stringify(results, undefined, 4))
 
         if (results.results.bindings) {
-            groupResults(results.results.bindings[0]).forEach(i => concepts.push(i))
+            groupResults(results.results.bindings[0]).forEach(i => {console.log('i', i); concepts.push({...i, endpoint})})
         }
     }
     const data = orderResults(concepts)
@@ -393,7 +393,8 @@ function orderResults(data) {
                 reference: item.ref,
                 identifier: item.value,
                 document: item.doc,
-                meta: item.meta
+                meta: item.meta,
+                endpoint: item.endpoint
             })
 
         } else {
@@ -404,7 +405,8 @@ function orderResults(data) {
                     reference: item.ref,
                     identifier: item.value,
                     document: item.doc,
-                    meta: item.meta
+                    meta: item.meta,
+                    endpoint: item.endpoint
             }]
             concepts[item.concept] = {
                 aliases,

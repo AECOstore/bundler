@@ -38,8 +38,8 @@ export const MenuItem: React.FC<MenuItemProps> = ({ children }) => <li className
 const defaultMenuItems = (
     <>
       <MenuItem type="general" meta={{}}>
-        <Link className="nav-link text-dark" to="/not-found">
-          Not Found
+        <Link className="nav-link text-dark" to="/store">
+          Store
         </Link>
       </MenuItem>
     </>

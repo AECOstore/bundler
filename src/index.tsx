@@ -13,11 +13,32 @@ import * as piralcore from "piral-core"
 import jsonld from 'jsonld'
 import { createAecoStoreApi } from './apis'
 import { getConfigQuery } from './queries'
-
+import {Button} from '@mui/material'
+import Store from './store'
 const ttl2jsonld = require('@frogcat/ttl2jsonld').parse;
 const QueryEngine = require('@comunica/query-sparql-link-traversal').QueryEngine;
 const myEngine = new QueryEngine();
 
+const projectData = [
+  {
+      "projectUrl": "https://pod.werbrouck.me/engineer/40050b82-9907-434c-91ab-7ce7c137d8b6",
+      "pod": "https://pod.werbrouck.me/engineer/",
+      "endpoint": "https://fuseki.werbrouck.me/demo/engineer/sparql",
+      "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
+  },
+  {
+      "projectUrl": "https://pod.werbrouck.me/fm/fb3d5bcd-8bcb-4d46-be2b-6c3ef824d5d9",
+      "pod": "https://pod.werbrouck.me/fm/",
+      "endpoint": "https://fuseki.werbrouck.me/demo/fm/sparql",
+      "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
+  },
+  {
+      "projectUrl": "https://pod.werbrouck.me/architect/0c39ccf8-b17e-47d8-a1d7-49a71c1a342f",
+      "pod": "https://pod.werbrouck.me/architect/",
+      "endpoint": "https://fuseki.werbrouck.me/demo/architect/sparql",
+      "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
+  }
+]
 
 sessionStorage.setItem('dbg:view-state', "off")
 
@@ -118,7 +139,6 @@ async function makePiral(feedUrl) {
       items : compacted["@graph"] || [compacted],
       feed: "sample"
     }
-    console.log('piralConfig', piralConfig)
     return piralConfig
   }
   
@@ -144,6 +164,7 @@ function getRoutes(items) {
 
 const App = () => {
   const [feedUrl, setFeedUrl] = React.useState(CONSTANTS.FEEDURL)
+  // const [feedUrl, setFeedUrl] = React.useState(undefined)
   const [piral, setPiral] = React.useState(undefined)
   const [conceptLoading, setConceptLoading] = React.useState(false)
 
@@ -156,32 +177,37 @@ const App = () => {
       })
       // setPiral(p)
     }
-  }, [piral])
+  }, [piral, feedUrl])
 
   return (
     <div>
       {piral ? (
         <div>
+          <Button onClick={() => {setFeedUrl(undefined); setPiral(undefined)}}>Back to Store</Button>
           {conceptLoading ? <p>Interlinking concepts...</p> : <></>}
           <PiralComponent piral={piral} setConceptLoading={setConceptLoading}/>
         </div>
       ) : (
         <div>
-          Loading...
+          <Store setFeedUrl={setFeedUrl}/>
         </div>
       )}
-      {/* <input type="text" defaultValue={feedUrl} onChange={e => setFeedUrl(e.target.value)} />
-      <button onClick={() => setPiral(undefined)}>load</button> */}
     </div>
   )
 }
 
+
+
 const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, setConceptLoading }) => {
+  piral.root.setDataGlobal(CONSTANTS.ACTIVE_PROJECT, projectData)
+
+
   piral.on('store-data', async ({ name, value }) => {
     if (name == CONSTANTS.SELECTED_REFERENCES) {
       setConceptLoading(true)
       const p = piral.root.getData(CONSTANTS.ACTIVE_PROJECT)
       const concepts = await piral.root.findConceptsById(value, p)
+      console.log('concepts', concepts)
       piral.root.setDataGlobal(CONSTANTS.SELECTED_CONCEPTS, concepts)
       setConceptLoading(false)
       }
@@ -192,7 +218,7 @@ const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, se
       <SetComponent name="Layout" component={Layout} />
       <SetComponent name="DashboardContainer" component={DashboardContainer} />
       <SetComponent name="DashboardTile" component={DashboardTile} />
-      <SetComponent name="MenuContainer" component={MenuContainer} />
+      <SetComponent name="MenuContainer" component={MenuContainer}/>
       <SetComponent name="LoadingIndicator" component={Loader} />
       <SetComponent name="ErrorInfo" component={ErrorInfo} />
       <SetComponent name="NotificationsHost" component={NotificationsHost} />
