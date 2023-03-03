@@ -27,6 +27,13 @@ module.exports = extendConfig({
             use: ['@svgr/webpack', 'url-loader'],
           },
           {
+            test: /\.(jpe?g|png|gif|svg)$/i, 
+            loader: 'file-loader',
+            options: {
+              name: '/public/[name].[ext]'
+            }
+        },
+          {
             test: /\.(ts|js)x?$/,
             exclude: /node_modules/,
             use: {

@@ -126,7 +126,7 @@ async function makePiral(feedUrl) {
         "link": {"@id": "http://w3id.org/mifesto#code", "@type": "@id"},
         "spec": "http://usefulinc.com/ns/doap#revision",
         "name": "http://www.w3.org/2000/01/rdf-schema#label",
-        "route": "http://w3id.org/mifesto#registersRoute",
+        "route": "http://w3id.org/mifesto#hasRoute",
         "type": {"@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "@type": "@id"},
         "hosts": {"@id": "http://w3id.org/mifesto#hosts", "@type": "@id"},
         "initialColumns": "http://w3id.org/mifesto#initialColumns",
@@ -167,17 +167,17 @@ const App = () => {
   // const [feedUrl, setFeedUrl] = React.useState(undefined)
   const [piral, setPiral] = React.useState(undefined)
   const [conceptLoading, setConceptLoading] = React.useState(false)
-
-  React.useEffect(() => {
-    if (piral === undefined && feedUrl) {
-      // const p = makePiral(feedUrl)
-      makePiral(feedUrl).then(res => {
-        setPiral(res)
-        const routes = getRoutes(res.root.getData("CONFIGURATION").items)
-      })
-      // setPiral(p)
-    }
-  }, [piral, feedUrl])
+ 
+  // React.useEffect(() => {
+  //   if (piral === undefined && feedUrl) {
+  //     // const p = makePiral(feedUrl)
+  //     makePiral(feedUrl).then(res => {
+  //       setPiral(res)
+  //       const routes = getRoutes(res.root.getData("CONFIGURATION").items)
+  //     })
+  //     // setPiral(p)
+  //   }
+  // }, [piral, feedUrl])
 
   return (
     <div>
@@ -201,13 +201,11 @@ const App = () => {
 const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, setConceptLoading }) => {
   piral.root.setDataGlobal(CONSTANTS.ACTIVE_PROJECT, projectData)
 
-
   piral.on('store-data', async ({ name, value }) => {
     if (name == CONSTANTS.SELECTED_REFERENCES) {
       setConceptLoading(true)
       const p = piral.root.getData(CONSTANTS.ACTIVE_PROJECT)
       const concepts = await piral.root.findConceptsById(value, p)
-      console.log('concepts', concepts)
       piral.root.setDataGlobal(CONSTANTS.SELECTED_CONCEPTS, concepts)
       setConceptLoading(false)
       }
@@ -223,7 +221,7 @@ const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, se
       <SetComponent name="ErrorInfo" component={ErrorInfo} />
       <SetComponent name="NotificationsHost" component={NotificationsHost} />
       <SetComponent name="NotificationsToast" component={NotificationsToast} />
-      <SetRoute path="/" component={Dashboard} />
+      {/* <SetRoute path="/" component={Dashboard} /> */}
     </Piral>
   )
 }

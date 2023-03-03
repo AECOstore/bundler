@@ -8,7 +8,7 @@ CONSTRUCT {
   ?child a ?type ;
     rdfs:label ?name ;
     doap:revision ?revision ;
-    mfe:registersRoute ?route ;
+    mfe:hasRoute ?route ;
     mfe:code ?link ;
     mfe:hosts ?sub ;
     mfe:initialColumns ?col ;
@@ -27,7 +27,7 @@ CONSTRUCT {
     mfe:code ?link .
 
   OPTIONAL {
-    ?version mfe:hasRoute ?route .
+    ?child mfe:hasRoute ?route .
   }
 
   OPTIONAL {

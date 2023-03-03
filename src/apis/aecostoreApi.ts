@@ -221,7 +221,16 @@ async function authFetch(input, init?) {
 
 function getChildModules(piral: PiletApi) {
   const modules = piral.getData("CONFIGURATION").items
-  const childrenLinks = piral.meta["hosts"] || []
+  let childrenLinks
+  if (piral.meta["hosts"]) {
+    if (Array.isArray(piral.meta["hosts"])) {
+      childrenLinks = piral.meta["hosts"]
+    } else {
+      childrenLinks = [piral.meta["hosts"]]
+    }
+  } else {
+    childrenLinks = []
+  }
 
   return modules.filter((item) => {
     return childrenLinks.includes(item["@id"])
