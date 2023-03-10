@@ -27,8 +27,8 @@ interface AecoStoreApi {
   findProjectEndpoints(projectUrl: string, queryEngine?: QueryEngine),
   getResourcesByContentType(project, contentType, resultFormat, queryEngine?),
   findConceptsById(data, project)
-
-}
+  querySatellite(query:string, satellite: string, session: any, type: string)
+} 
 
 export function createAecoStoreApi(): PiralPlugin<AecoStoreApi> {
   return context => () => ({
@@ -43,6 +43,7 @@ export function createAecoStoreApi(): PiralPlugin<AecoStoreApi> {
     findSparqlSatellite,
     findSparqlSatelliteFromResource,
     findProjectEndpoints,
+    querySatellite,
     getResourcesByContentType,
     findConceptsById
   })
@@ -121,28 +122,35 @@ async function getResourcesByContentType(project: IProject[], contentType, query
   const resultFormat: string = 'application/json'
   for (const d of project) {
     d.query = `SELECT * WHERE {
-    <${d.projectUrl}> <${DCAT.dataset}>+ ?ds .
+    <${d.projectUrl}> <${DCAT.dataset}> ?ds .
     ?ds <${DCAT.distribution}> ?dist .
     ?dist <${DCAT.downloadURL}> ?dUrl ;
           <${DCAT.mediaType}> <${contentType}> .
   }`
   }
   const results = await queryEndpoints(project)
-  return results.flat()
+  return results.results.bindings
 }
 
 async function queryEndpoints(project: IProject[], queryEngine: QueryEngine = new QueryEngine()) {
   if (!queryEngine) queryEngine = new QueryEngine()
-  const resultFormat: string = 'application/json'
-  const results = []
-  for (const d of project) {
-    const result = await queryEngine.query(d.query, { sources: [d.endpoint] })
-    const { data } = await queryEngine.resultToString(result, resultFormat)
-    const stringified = await streamToString(data)
-    const info = JSON.parse(stringified)
-    results.push(info)
+  const session = makeSession()
+  const results = {
+    head: {vars: []},
+    results: {bindings: []}
   }
-  return results.flat()
+  for (const d of project) {
+    const info = await querySatellite(d.query, d.endpoint, session, "from").then(i => i.json())
+    info.head.vars.forEach(v => results.head.vars.push(v))
+    info.results.bindings.forEach(b => results.results.bindings.push(b))
+    
+    // const result = await queryEngine.query(d.query, { sources: [d.endpoint] })
+    // const { data } = await queryEngine.resultToString(result, resultFormat)
+    // const stringified = await streamToString(data)
+    // const info = JSON.parse(stringified)
+    // results.push(info)
+  }
+  return results
 }
 
 function streamToString (stream): Promise<string> {
@@ -177,6 +185,22 @@ async function findSparqlSatellite(webId, queryEngine?: QueryEngine) {
   } else {
     throw Error('No SPARQL satellite was found at this WebId')
   }
+}
+
+async function querySatellite(query, satellite, session, type="FROM") {
+  let myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+  let urlencoded = new URLSearchParams();
+  urlencoded.append("query", query)
+  urlencoded.append("type", "FROM")
+  const requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: urlencoded,
+  };
+
+  const results = await session.fetch(`${satellite}`, requestOptions)
+  return results
 }
 
 function makeSession() {

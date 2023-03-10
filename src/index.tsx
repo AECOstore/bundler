@@ -139,6 +139,7 @@ async function makePiral(feedUrl) {
       items : compacted["@graph"] || [compacted],
       feed: "sample"
     }
+    console.log('piralConfig :>> ', piralConfig);
     return piralConfig
   }
   
@@ -168,16 +169,16 @@ const App = () => {
   const [piral, setPiral] = React.useState(undefined)
   const [conceptLoading, setConceptLoading] = React.useState(false)
  
-  // React.useEffect(() => {
-  //   if (piral === undefined && feedUrl) {
-  //     // const p = makePiral(feedUrl)
-  //     makePiral(feedUrl).then(res => {
-  //       setPiral(res)
-  //       const routes = getRoutes(res.root.getData("CONFIGURATION").items)
-  //     })
-  //     // setPiral(p)
-  //   }
-  // }, [piral, feedUrl])
+  React.useEffect(() => {
+    if (piral === undefined && feedUrl) {
+      // const p = makePiral(feedUrl)
+      makePiral(feedUrl).then(res => {
+        setPiral(res)
+        const routes = getRoutes(res.root.getData("CONFIGURATION").items)
+      })
+      // setPiral(p)
+    }
+  }, [piral, feedUrl])
 
   return (
     <div>

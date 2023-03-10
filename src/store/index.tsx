@@ -5,7 +5,7 @@ import CONSTANTS from '../constants'
 const QueryEngine = require('@comunica/query-sparql-link-traversal').QueryEngine;
 
 
-const stores = [`${CONSTANTS.DEFAULT_IDP}/aecostore/store`]
+const stores = [`https://pod.werbrouck.me/aecostore/store`]
 
 const Store = (props) => {
   const [selectedStores, setSelectedStores] = React.useState(stores)
@@ -29,8 +29,11 @@ const Store = (props) => {
       ?store dcat:dataset+ ?config .
       ?config a mifesto:Configuration .
     }`
+
+
     const results = await myEngine.queryBindings(query, { sources: selectedStores })
     const configs = await results.toArray()
+    console.log('configs :>> ', configs);
     const all = new Set()
     configs.forEach(c => all.add(c.get('config').id))
     const res = Array.from(all).sort()
@@ -56,31 +59,26 @@ const Store = (props) => {
       </Grid>
       <Grid item xs={8}>
       <Typography variant="h1" style={{textAlign: "center", marginBottom: 30}}>MIFESTO</Typography>
-      <Typography variant="h4">What is Mifesto?</Typography>
-      <Typography>The <a href="#">Micro Frontend Store (Mifesto)</a> is a framework to interact with heterogeneous collaborative projects. Its main use case is the built environment, but since the infrastructure is domain-agnostic, any discipline can adopt its main patterns. Mifesto is the GUI part of the patterns proposed in the <a href='https://www.semantic-web-journal.net/content/consolid-federated-ecosystem-heterogeneous-multi-stakeholder-projects-0'>ConSolid</a> ecosystem. Mifesto allows to combine federated interaction modules into a unified application. Modules can be set up to interact with heterogeneous resources such as geometry, imagery and point clouds. Resources and their content are considered "representations" of abstract concepts, and are linked as such. The meaning of an abstract concept then comes from combining its federated representations. Hence, a user can select a geometric instance in a 3D viewer, which triggers the selection of the abstract concept, which can be further enriched by other modules by creating new representations. For example, adding imagery or semantics such as classification data, damage records, properties or history. This principle is demonstrated in Figure 1.</Typography>
+      <Typography variant="h4" style={headerStyle}>What is Mifesto?</Typography>
+      <Typography>The <a href="#">Micro Frontend Store (Mifesto)</a> is a framework to interact with heterogeneous collaborative projects. Its main use case is the built environment, but since the infrastructure is domain-agnostic, any discipline can adopt its main patterns. Mifesto is the GUI part of the patterns proposed in the <a href='https://www.semantic-web-journal.net/content/consolid-federated-ecosystem-heterogeneous-multi-stakeholder-projects-0'>ConSolid</a> ecosystem. Mifesto allows to combine federated interaction modules into a unified application (Figure 2). Modules can be set up to interact with heterogeneous resources such as geometry, imagery and point clouds. </Typography>
+      
+      <Image filename="microfrontends_configuration.png" description="Building an interface consisting of interacting microfrontends." index="2" width="80%"/>
+      
+      <Typography>Resources and their content are considered "representations" of abstract concepts, and are linked as such. The meaning of an abstract concept then comes from combining its federated representations. Hence, a user can select a geometric instance in a 3D viewer, which triggers the selection of the abstract concept, which can be further enriched by other modules by creating new representations. For example, adding imagery or semantics such as classification data, damage records, properties or history. This principle is demonstrated in Figure 2.</Typography>
 
-      <Image filename="concept_aggregator_modules.png" description="Abstract concepts in the ConSolid ecosystem." index="1"/>
+      <Image filename="concept_aggregator_modules.png" description="Abstract concepts in the ConSolid ecosystem." index="2" width="50%"/>
       <Typography>There are other options for modules, too. For example, for authentication, to create projects, send messages between project partners or to validate project data against internal rules or external regulations.
 
-      Along with its loadable code, a module publishes a semantic manifest. Manifests, in turn, can be combined into Interface Configurations, which wire the modules needed to address a particular use case. Because Manifests and Interface Configurations are dereferenceable, they can be aggregated in decentral catalogs, which themselves can again be aggregated indefinitely. The active "Store" is then formed by reconstructing the complete tree of aggregated modules (Figure 2). 
+      Along with its loadable code, a module publishes a semantic manifest. Manifests, in turn, can be combined into Interface Configurations, which wire the modules needed to address a particular use case. Because Manifests and Interface Configurations are dereferenceable, they can be aggregated in decentral catalogs, which themselves can again be aggregated indefinitely. The active "Store" is then formed by reconstructing the complete tree of aggregated modules (Figure 2). </Typography>
 
+      <Image filename="store_visualisation.png" description="An active store is the total aggregation of microfrontends and configurations nested in its branches." index="3" width="50%" />
 
-      In order to aggregate all modules into a single GUI, 
-      This implementation of the shell application is based on <a>Piral.io</a></Typography>
-      <br />
-      <Typography>Check the corresponding wiki pages for more information:</Typography>
-      <ul>
-        <li><a href="https://github.com/ConSolidProject">ConSolid (backend)</a></li>
-        <li><a href="https://github.com/AECOstore">Mifesto (frontend)</a></li>
-      </ul>
-      <hr/>
-      <Typography>Please select one or more Mifesto stores below, or add a new one.</Typography>
-      <FormGroup style={{ alignContent: "center", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-        {stores.map(storeUrl => {
-          return <FormControlLabel key={storeUrl} control={<Checkbox checked={selectedStores.includes(storeUrl)} onChange={() => toggleStore(storeUrl)} />} label={storeUrl} />
-        })}
-      </FormGroup>
-      <Button variant="contained" onClick={queryStoresForConfigurations}>Find Modules</Button>
+      <Typography>In order to aggregate all modules into a single GUI, a Shell application is needed. This Shell application is able to allocate and interpret interface configurations and present a consistent graphical user interface to the end-user. In this demo implementation of the Shell application, we make use of the <a href="https://piral.io">Piral.io</a> framework, with minor modifications.</Typography>
+    
+    
+    <Typography variant="h4" style={headerStyle}>Get Started</Typography>
+    <Typography>In this demo, a single store instance is created, which gives you the choice to load 2 configurations. Please select one or more Mifesto stores below, or add a new one. The Access Point of this store is <a href={stores[0]}>{stores[0]}</a>.</Typography>
+      <Button fullWidth style={buttonStyle} variant="contained" onClick={queryStoresForConfigurations}>Find Modules</Button>
       {configs.length ? (
         <div>
           <div>
@@ -94,7 +92,7 @@ const Store = (props) => {
             </FormControl>
           </div>
           <div>          
-            <Button variant="contained" onClick={() => setFeedUrl(selectedConfig)}>Load Configuration</Button>
+            <Button style={buttonStyle} variant="contained" fullWidth onClick={() => setFeedUrl(selectedConfig)}>Load Configuration</Button>
           </div>
         </div>
       ) : (
@@ -108,11 +106,19 @@ const Store = (props) => {
   )
 }
 
-const Image = ({filename, description, index}) => {
-  return <div style={{marginTop: 30, marginBottom:30}}>
-  <img src={require(`../../public/${filename}`)} width="100%" alt="concepts" />
-  <span>Figure {index}: {description}</span>
+const Image = ({filename, description, index, width}) => {
+  return <div>
+    <div style={{marginTop: 30, marginBottom:30, marginLeft: "auto", marginRight: "auto", alignItems: "center", justifyContent: "center", alignSelf: "center", display: "flex"}} >
+    <img src={require(`../../public/${filename}`)} width={width} alt="concepts" />
+
+    </div>
+  <hr/>
+  <span style={{alignItems: "center", justifyContent: "center", marginBottom: 30}}>Figure {index}: {description}</span>
+  <hr/>
   </div>
 }
 
 export default Store
+
+const headerStyle = {marginTop: 30, marginBottom: 20}
+const buttonStyle = {marginTop: 15, marginBottom: 15}
