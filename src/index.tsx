@@ -23,19 +23,19 @@ const projectData = [
   {
       "projectUrl": "https://pod.werbrouck.me/engineer/40050b82-9907-434c-91ab-7ce7c137d8b6",
       "pod": "https://pod.werbrouck.me/engineer/",
-      "endpoint": "https://fuseki.werbrouck.me/demo/engineer/sparql",
-      "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
+      "endpoint": "https://sparql.werbrouck.me/engineer/sparql",
+      "referenceRegistry": "https://pod.werbrouck.me/engineer/a55eecd4-e773-436a-8013-5e2b6932fc28"
   },
   {
       "projectUrl": "https://pod.werbrouck.me/fm/fb3d5bcd-8bcb-4d46-be2b-6c3ef824d5d9",
       "pod": "https://pod.werbrouck.me/fm/",
-      "endpoint": "https://fuseki.werbrouck.me/demo/fm/sparql",
-      "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
+      "endpoint": "https://sparql.werbrouck.me/fm/sparql",
+      "referenceRegistry": "https://pod.werbrouck.me/fm/afa64a49-eae2-4a39-9fe4-3be92b491453"
   },
   {
       "projectUrl": "https://pod.werbrouck.me/architect/0c39ccf8-b17e-47d8-a1d7-49a71c1a342f",
       "pod": "https://pod.werbrouck.me/architect/",
-      "endpoint": "https://fuseki.werbrouck.me/demo/architect/sparql",
+      "endpoint": "https://sparql.werbrouck.me/architect/sparql",
       "referenceRegistry": "https://pod.werbrouck.me/architect/0d80e558-8f5b-491f-856b-636e29d3c2b5"
   }
 ]
@@ -139,7 +139,6 @@ async function makePiral(feedUrl) {
       items : compacted["@graph"] || [compacted],
       feed: "sample"
     }
-    console.log('piralConfig :>> ', piralConfig);
     return piralConfig
   }
   
@@ -207,6 +206,7 @@ const PiralComponent = ({ piral, setConceptLoading }: { piral: PiralInstance, se
       setConceptLoading(true)
       const p = piral.root.getData(CONSTANTS.ACTIVE_PROJECT)
       const concepts = await piral.root.findConceptsById(value, p)
+      console.log('concepts :>> ', concepts);
       piral.root.setDataGlobal(CONSTANTS.SELECTED_CONCEPTS, concepts)
       setConceptLoading(false)
       }

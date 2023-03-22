@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 
 export const MenuContainer: React.FC<MenuContainerProps> = ({ children }) => {
     const [collapsed, setCollapsed] = React.useState(true);
-    console.log('children menucontainer', children)
     return (
         <header>
             <nav className="navbar navbar-light navbar-expand-sm navbar-toggleable-sm ng-white border-bottom box-shadow mb-3" >

@@ -6,8 +6,21 @@ import Cookies from 'universal-cookie';
 import jwt_decode from 'jwt-decode'
 import { QueryEngine } from '@comunica/query-sparql'
 import { DCAT } from '@inrupt/vocab-common-rdf'
+import jsonld from 'jsonld'
+import {parse} from '@frogcat/ttl2jsonld'
 
-
+const context = {
+  "@context": {
+    "link": {"@id": "http://w3id.org/mifesto#code", "@type": "@id"},
+    "spec": "http://usefulinc.com/ns/doap#revision",
+    "name": "http://www.w3.org/2000/01/rdf-schema#label",
+    "route": "http://w3id.org/mifesto#hasRoute",
+    "document": {"@id": "https://w3id.org/consolid#inDocument", "@type": "@id"},
+    "identifier": {"@id": "https://w3id.org/consolid#hasIdentifier", "@type": "@id"},
+    "aggregates": {"@id": "https://w3id.org/consolid#aggregates", "@type": "@id"},
+    "value": "https://schema.org/value"
+  }
+}
 
 const cookies = new Cookies()
 
@@ -22,12 +35,17 @@ interface AecoStoreApi {
   getChildModules(app: PiletApi),
   authFetch(input: any, token: string, init?: any),
   makeSession(),
+  queryEndpoints(project: IProject[]),
   findSparqlSatellite(webId: string, queryEngine?: QueryEngine),
   findSparqlSatelliteFromResource(projectUrl: string, queryEngine?: QueryEngine),
   findProjectEndpoints(projectUrl: string, queryEngine?: QueryEngine),
-  getResourcesByContentType(project, contentType, resultFormat, queryEngine?),
+  getResourcesByContentType(project, contentType, queryEngine?),
+  getResourcesByFilter(project, filter),
   findConceptsById(data, project)
-  querySatellite(query:string, satellite: string, session: any, type: string)
+  querySatellite(query:string, satellite: string, type: string),
+  getAssociatedConcepts(doc: string, project: any),
+  getAllReferences(preQuery: any, identifiers: string[], project: any)
+  
 } 
 
 export function createAecoStoreApi(): PiralPlugin<AecoStoreApi> {
@@ -45,7 +63,11 @@ export function createAecoStoreApi(): PiralPlugin<AecoStoreApi> {
     findProjectEndpoints,
     querySatellite,
     getResourcesByContentType,
-    findConceptsById
+    getResourcesByFilter,
+    findConceptsById,
+    getAssociatedConcepts,
+    getAllReferences,
+    queryEndpoints
   })
 }
 
@@ -117,30 +139,31 @@ interface IProject {
   query?: string
 }
 
-async function getResourcesByContentType(project: IProject[], contentType, queryEngine: QueryEngine = new QueryEngine()) {
-  if (!queryEngine) queryEngine = new QueryEngine()
-  const resultFormat: string = 'application/json'
+async function getResourcesByContentType(project: IProject[], contentType) {
+  const filter = `?resource <${DCAT.mediaType}> <${contentType}> .`
+  return await getResourcesByFilter(project, filter)
+}
+
+async function getResourcesByFilter(project: IProject[], filter = "") {
   for (const d of project) {
     d.query = `SELECT * WHERE {
     <${d.projectUrl}> <${DCAT.dataset}> ?ds .
     ?ds <${DCAT.distribution}> ?dist .
-    ?dist <${DCAT.downloadURL}> ?dUrl ;
-          <${DCAT.mediaType}> <${contentType}> .
+    ?dist <${DCAT.downloadURL}> ?resource .
+    ${filter}
   }`
   }
   const results = await queryEndpoints(project)
   return results.results.bindings
 }
 
-async function queryEndpoints(project: IProject[], queryEngine: QueryEngine = new QueryEngine()) {
-  if (!queryEngine) queryEngine = new QueryEngine()
-  const session = makeSession()
+async function queryEndpoints(project: IProject[]) {
   const results = {
     head: {vars: []},
     results: {bindings: []}
   }
   for (const d of project) {
-    const info = await querySatellite(d.query, d.endpoint, session, "from").then(i => i.json())
+    const info = await querySatellite(d.query, d.endpoint, "from").then(i => i.json())
     info.head.vars.forEach(v => results.head.vars.push(v))
     info.results.bindings.forEach(b => results.results.bindings.push(b))
     
@@ -187,12 +210,13 @@ async function findSparqlSatellite(webId, queryEngine?: QueryEngine) {
   }
 }
 
-async function querySatellite(query, satellite, session, type="FROM") {
+async function querySatellite(query, satellite, type="FROM") {
   let myHeaders = new Headers();
+  const session = makeSession()
   myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
   let urlencoded = new URLSearchParams();
   urlencoded.append("query", query)
-  urlencoded.append("type", "FROM")
+  urlencoded.append("type", type)
   const requestOptions = {
       method: 'POST',
       headers: myHeaders,
@@ -205,7 +229,7 @@ async function querySatellite(query, satellite, session, type="FROM") {
 
 function makeSession() {
   let token = cookies.get(constants.ACCESS_TOKEN)
-  if (token != "undefined") {
+  if (token != "undefined" && token != undefined) {
     const decoded = jwt_decode<any>(token)
     const webId = decoded.webid
 
@@ -261,41 +285,116 @@ function getChildModules(piral: PiletApi) {
   })
 }
 
-
-
-
-// const mapGlobalState = ({ name, value }, mapping) => {
-//   for (const [key, v] of Object.entries(mapping)) {
-//     if (name.includes(key)) {
-//       const setter = v["onEvent"]
-//       setter(value)
-//     }
-//   }
-// }
-
-// const mappingFactory = (mapping, piral) => {
-//   const final = {}
-//   for (const [key, value] of Object.entries(mapping)) {
-//     final[key] = {
-//       onEvent: value,
-//       set(value) {
-//         const k = key + "_&&_" + piral.meta.basePath
-//         return piral.setData(k, value)
-//       }
-//     }
-//   }
-//   return final
-// }
-
 function encode(str) {
     let s = encodeURIComponent(str)
     s = s.replace("#", "%23").replace("$", "%24")
     return s
 }
 
+async function getAssociatedConcepts(doc, project) {
+  const session = makeSession()
+  const data = {}
+  for (const partial of project) {
+      const query = `
+    SELECT ?concept ?alias ?val 
+    FROM NAMED <${partial.referenceRegistry}> 
+    WHERE {
+      graph ?g {?concept a <https://w3id.org/consolid#Concept> ;
+          <https://w3id.org/consolid#aggregates> ?reference .
+      ?reference <https://w3id.org/consolid#hasIdentifier> ?id.
+      ?id <https://w3id.org/consolid#inDocument> <${doc}> ;
+      <https://schema.org/value> ?val . 
+
+      OPTIONAL {
+          ?concept <https://w3id.org/consolid#aggregates> ?alias .
+          FILTER regex(str(?alias), '^((?!${partial.pod}).)*$')
+      }
+
+      FILTER regex(str(?concept), '^((?!graph=).)*$')
+      FILTER regex(str(?alias), '^((?!graph=).)*$')
+
+    }}`
+
+      const results = await querySatellite(query, partial.endpoint).then(i => i.json())
+      // console.log('JSON.stringify(results, 0,4) :>> ', JSON.stringify(results, 0,4));
+      results.results.bindings.forEach(binding => {
+          // console.log('"' + binding.val.value + '"');
+          if (!data[binding.concept.value]) data[binding.val.value] = [binding.concept.value]
+          if (binding.alias) data[binding.val.value].push(binding.alias.value)
+      })
+
+  }
+  return data
+}
+
+async function getAllReferences(preQuery, identifiers, project) {
+  let data = []
+  for (const partial of project) {
+      const endpoint = partial.endpoint
+      let conceptCount = []
+      let varString = `CONSTRUCT {`
+      let queryString = `} FROM NAMED <${partial.referenceRegistry}> WHERE { GRAPH ?g {`
+      for (const identifier of identifiers) {
+          const aliases = preQuery[identifier].filter(i => i.includes(partial.pod))
+          aliases.forEach(alias => {
+              conceptCount.push(alias)
+
+              // varString += `?reference_${conceptCount.length - 1} ?value_${conceptCount.length - 1} ?document_${conceptCount.length - 1} ?concept_${conceptCount.length - 1} \n`
+              varString += `?concept_${conceptCount.length - 1} <https://w3id.org/consolid#hasIdentifier> ?id_${conceptCount.length - 1}.
+              ?id_${conceptCount.length - 1} <https://w3id.org/consolid#inDocument> ?document_${conceptCount.length - 1} ;
+          <https://schema.org/value> ?value_${conceptCount.length - 1} . `
+
+              queryString += `BIND(<${alias}> as ?concept_${conceptCount.length - 1}) 
+<${alias}> a <https://w3id.org/consolid#Concept> ;
+  <https://w3id.org/consolid#aggregates> ?reference_${conceptCount.length - 1} .
+?reference_${conceptCount.length - 1} <https://w3id.org/consolid#hasIdentifier> ?id_${conceptCount.length - 1}.
+  ?id_${conceptCount.length - 1} <https://w3id.org/consolid#inDocument> ?document_${conceptCount.length - 1} ;
+<https://schema.org/value> ?value_${conceptCount.length - 1} . 
+\n`
+          })
+      }
+
+      if (conceptCount.length) {
+          const query = varString + queryString + `}}`
+          const results = await querySatellite(query, endpoint).then(i => i.text())
+          const asJsonLD = parse(results)
+          const flattened = await jsonld.flatten(asJsonLD)
+          const compacted = await jsonld.compact(flattened, context)
+          const graph = compacted["@graph"]
+          data = [...data, graph]
+      }
+  }
+  const selection = Object.keys(preQuery).filter(key => identifiers.includes(key)).map(key => preQuery[key])
+  return reconstruct(data.flat(), selection)
+
+}
+
+function reconstruct(data, preQuery) {
+  const concepts = {}
+  for (const dict of data) {
+      if (dict.identifier) {
+          const concept = dict["@id"]
+          if (!concepts[concept]) concepts[concept] = []
+          
+          data.filter(i => i["@id"] === dict.identifier)
+          .forEach(i => concepts[concept].push({identifier: i.value, document: i.document}))
+      }
+  }
+
+  const final = []
+  for (const concept of preQuery) {
+      const references = []
+      const c: any = {aliases: concept}
+      for (const alias of concept) {
+          references.push(concepts[alias])
+      }
+      c.references = references.flat()
+      final.push(c)
+  }
+  return final
+}
+
 async function getReferencesAndConcepts(d, project) {
-    console.log('data', d)
-    console.log('p', project)
     const podToEndpoint = {}
     project.forEach(i => {
         podToEndpoint[i.pod] = i.endpoint
@@ -455,12 +554,3 @@ async function findConceptsById(data, project) {
     const results = await doQuery(ordered)
     return results
 }
-
-
-
-// const now = new Date()
-// console.log('start')
-// run().then(() => {
-//     const end = new Date()
-//     console.log("duration: ", end.getTime() - now.getTime())
-// })
