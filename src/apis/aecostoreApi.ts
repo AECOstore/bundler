@@ -8,7 +8,7 @@ import { QueryEngine } from '@comunica/query-sparql'
 import { DCAT } from '@inrupt/vocab-common-rdf'
 import jsonld from 'jsonld'
 import {parse} from '@frogcat/ttl2jsonld'
-
+import fetch from "cross-fetch"
 const context = {
   "@context": {
     "link": {"@id": "http://w3id.org/mifesto#code", "@type": "@id"},

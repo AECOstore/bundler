@@ -9,7 +9,7 @@ const data = {
     FEEDURL: "https://pod.werbrouck.me/aecostore/configurations/viz_query",
     SELECTED_CONCEPTS: "http://example.org/selected_concepts",
     SELECTED_REFERENCES: "http://example.org/selected_references",
-    DEFAULT_PASSWORD: "test123",
+    DEFAULT_PASSWORD: "",
     DEFAULT_USERNAME: "architect@example.org",
     DEFAULT_IDP: "https://pod.werbrouck.me"
 }
