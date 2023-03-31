@@ -12,7 +12,8 @@ CONSTRUCT {
     mfe:code ?link ;
     mfe:hosts ?sub ;
     mfe:initialColumns ?col ;
-    mfe:initialRows ?row .
+    mfe:initialRows ?row ;
+    mfe:compatibleMedia ?mt .
 } WHERE {
   ?config a mfe:Configuration;
     mfe:hosts+ ?child .
@@ -29,6 +30,8 @@ CONSTRUCT {
   OPTIONAL {
     ?child mfe:hasRoute ?route .
   }
+
+  OPTIONAL {?version mfe:compatibleMedia ?mt}
 
   OPTIONAL {
     ?child mfe:hasDimensions ?dim .

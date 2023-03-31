@@ -85,8 +85,11 @@ async function findProjectEndpoints(projectUrl, queryEngine?: QueryEngine) {
     <${projectUrl}> <${DCAT.dataset}> ?ds .
     FILTER(!CONTAINS(str(?ds), "${mainUrl}"))
   }`
+  let config:any = {sources: [projectUrl]}
+  if (session.info.isLoggedIn) config["fetch"] = session.fetch
+  
 
-  const bindings = await queryEngine.queryBindings(query, { sources: [projectUrl], fetch: session.fetch })
+  const bindings = await queryEngine.queryBindings(query, config)
   const results = await bindings.toArray().then(res => res.map(i => i.get('ds').value))
   results.push(projectUrl)
   return results
@@ -222,8 +225,7 @@ async function querySatellite(query, satellite, type="FROM") {
       headers: myHeaders,
       body: urlencoded,
   };
-
-  const results = await session.fetch(`${satellite}`, requestOptions)
+  const results = await fetch(satellite, requestOptions)
   return results
 }
 
@@ -292,7 +294,6 @@ function encode(str) {
 }
 
 async function getAssociatedConcepts(doc, project) {
-  const session = makeSession()
   const data = {}
   for (const partial of project) {
       const query = `
@@ -319,7 +320,7 @@ async function getAssociatedConcepts(doc, project) {
       // console.log('JSON.stringify(results, 0,4) :>> ', JSON.stringify(results, 0,4));
       results.results.bindings.forEach(binding => {
           // console.log('"' + binding.val.value + '"');
-          if (!data[binding.concept.value]) data[binding.val.value] = [binding.concept.value]
+          if (!data[binding.val.value]) data[binding.val.value] = [binding.concept.value]
           if (binding.alias) data[binding.val.value].push(binding.alias.value)
       })
 
@@ -494,7 +495,7 @@ async function doQuery(ordered) {
         // console.log('results', JSON.stringify(results, undefined, 4))
 
         if (results.results.bindings) {
-            groupResults(results.results.bindings[0]).forEach(i => {console.log('i', i); concepts.push({...i, endpoint})})
+            groupResults(results.results.bindings[0]).forEach(i => concepts.push({...i, endpoint}))
         }
     }
     const data = orderResults(concepts)

@@ -6,7 +6,7 @@ const data = {
     REFERENCE_REGISTRY: "http://example.org/reference_registry",
     SPARQL_ENDPOINTS: "http://example.org/sparql_endpoints",
     ACTIVE_DOCUMENTS: "http://example.org/active_documents",
-    FEEDURL: "https://pod.werbrouck.me/aecostore/configurations/viz_query",
+    FEEDURL: "https://pod.werbrouck.me/aecostore/configurations/welcome",
     SELECTED_CONCEPTS: "http://example.org/selected_concepts",
     SELECTED_REFERENCES: "http://example.org/selected_references",
     DEFAULT_PASSWORD: "",
@@ -15,3 +15,4 @@ const data = {
 }
 
 export default data
+// "https://pod.werbrouck.me/aecostore/configurations/viz_query"

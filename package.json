@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.10.4",
     "@frogcat/ttl2jsonld": "^0.0.8",
     "@inrupt/vocab-common-rdf": "^1.0.5",
+    "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.9",
     "buffer": "^6.0.3",
     "consolid-daapi": "^0.0.8",
