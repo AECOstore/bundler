@@ -153,6 +153,7 @@ async function makePiral(feedUrl) {
     plugins: [createAecoStoreApi(), createContainersApi()]
   });
   p.root.setData("CONSTANTS", CONSTANTS)
+  console.log('configuration :>> ', configuration);
   p.root.setData("CONFIGURATION", configuration)
   return p
 }
@@ -171,6 +172,19 @@ const App = () => {
   const [piral, setPiral] = React.useState(undefined)
   const [conceptLoading, setConceptLoading] = React.useState(false)
 
+
+  function createNewConfiguration(config) {
+    const p = createPiral({
+      requestPilets() {
+        return Promise.resolve(config.items)
+      },
+      plugins: [createAecoStoreApi(), createContainersApi()]
+    });
+    p.root.setData("CONSTANTS", CONSTANTS)
+    p.root.setData("CONFIGURATION", config)
+    setPiral(p)
+  }
+
   React.useEffect(() => {
     if (piral === undefined && feedUrl) {
       // const p = makePiral(feedUrl)
@@ -187,13 +201,13 @@ const App = () => {
       {piral ? (
         <div>
             {(feedUrl !== "https://pod.werbrouck.me/aecostore/configurations/welcome") ? (
-            <Fab style={{position: "fixed", right: 10, bottom: 10}} color="primary" aria-label="add" onClick={() => { setFeedUrl("https://pod.werbrouck.me/aecostore/configurations/welcome"); setPiral(undefined) }}>
+            <Fab style={{position: "fixed", right: 10, bottom: 10}} color="primary" aria-label="add" onClick={() => { setFeedUrl("https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/welcome.ttl"); setPiral(undefined) }}>
             <AddBusinessIcon sx={{ mr: 1 }} />
             </Fab>
             ) : (
               <></>
             )}
-          <PiralComponent piral={piral} setConceptLoading={setConceptLoading} setFeedUrl={setFeedUrl} setPiral={setPiral} />
+          <PiralComponent piral={piral} setConceptLoading={setConceptLoading} setFeedUrl={setFeedUrl} setPiral={setPiral} createNewConfiguration={createNewConfiguration}/>
         </div>
       ) : (
         <div>
@@ -206,7 +220,7 @@ const App = () => {
 
 
 
-const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral }: { piral: PiralInstance, setConceptLoading, setFeedUrl, setPiral }) => {
+const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral, createNewConfiguration}: { piral: PiralInstance, setConceptLoading, setFeedUrl, setPiral, createNewConfiguration }) => {
   // piral.root.setDataGlobal(CONSTANTS.ACTIVE_PROJECT, projectData)
 
   // piral.on('store-data', async ({ name, value }) => {

@@ -9,7 +9,7 @@ export const MenuContainer: React.FC<MenuContainerProps> = ({ children }) => {
             <nav className="navbar navbar-light navbar-expand-sm navbar-toggleable-sm ng-white border-bottom box-shadow mb-3" >
                 <div className="container">
                     <Link className="navbar-brand" to="/">
-                        ConSOLID
+                        Mifesto
                     </Link>
                     <button
                         aria-label="Toggle navigation"
