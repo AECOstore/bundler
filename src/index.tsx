@@ -1,8 +1,8 @@
 import 'piral/polyfills';
 import * as React from 'react'
 import { createPiral, Piral, SetComponent, LoadingIndicatorProps, SetRoute, Dashboard, PiralInstance, PiletApi, PiralPlugin } from 'piral';
-import {Fab, Box} from '@mui/material';
-
+import { Fab, Box } from '@mui/material';
+import {v4} from 'uuid'
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import { layout, Layout } from './layout';
 import { ErrorInfo, errors } from './layout/Error'
@@ -62,152 +62,117 @@ const Loader: React.FC<LoadingIndicatorProps> = () => (
   </div>
 );
 
-async function makePiral(feedUrl) {
+async function getTtl(data) {
+  let config
+  if (typeof data === "object") {return data}
 
-  // ugly, make better when time ...
-  function reshapeConfig(config) {
-    const items = []
-    const added = []
-    const filtered = []
-    for (const page of config.pages) {
-      if (page.modules) {
-        const mod = constructTree(page, [])
-        items.push(mod)
-      }
-      items.push(page)
-    }
-    for (const item of items.flat()) {
-      if (!added.includes(item.link)) {
-        filtered.push(item)
-        added.push(item.link)
-      }
-    }
-    return filtered
-  }
-
-  function constructTree(root, recursiveArray?) {
-    const resources = root.modules
-    for (const res of resources) {
-      recursiveArray.push(res);
-      if (res.modules) {
-        recursiveArray = constructTree(res, recursiveArray);
-      } else {
-        recursiveArray.push(res)
-      }
-    }
-    return recursiveArray;
-  }
-
-  function configFromStream(quadStream) {
-    return new Promise((resolve, reject) => {
-      let configuration = ""
-      quadStream.on('data', (quad) => {
-        configuration += `<${quad.subject.value}> `
-        configuration += `<${quad.predicate.value}> `
-        if (quad.object.value.startsWith("http")) {
-          configuration += `<${quad.object.value}> . `
-        } else {
-          configuration += `"${quad.object.value}" . `
-        }
-      })
-      quadStream.on('end', () => resolve(configuration))
-      quadStream.on('error', (err) => {
-        console.log('error', err)
-        reject(err)
-      })
-    })
-  }
-
-  async function remapConfigToJSON(feedUrl): Promise<any> {
+  if (data.startsWith("http")) {
     const query = getConfigQuery
-    const quadStream = await myEngine.queryQuads(query, { sources: [feedUrl], lenient: true })
-    const config = await configFromStream(quadStream)
-    const jsonConfig = ttl2jsonld(config)
-    const context = {
-      "@context": {
-        "link": { "@id": "http://w3id.org/mifesto#code", "@type": "@id" },
-        "spec": "http://usefulinc.com/ns/doap#revision",
-        "name": "http://www.w3.org/2000/01/rdf-schema#label",
-        "route": "http://w3id.org/mifesto#hasRoute",
-        "type": { "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "@type": "@id" },
-        "hosts": { "@id": "http://w3id.org/mifesto#hosts", "@type": "@id" },
-        "compatibleMedia": { "@id": "http://w3id.org/mifesto#compatibleMedia", "@type": "@id" },
-        "initialColumns": "http://w3id.org/mifesto#initialColumns",
-        "initialRows": "http://w3id.org/mifesto#initialRows"
-      }
-    }
-    const flattened = await jsonld.flatten(jsonConfig)
-    const compacted = await jsonld.compact(flattened, context)
-    const piralConfig = {
-      items: compacted["@graph"] || [compacted],
-      feed: "sample"
-    }
-    return piralConfig
+    const quadStream = await myEngine.queryQuads(query, { sources: [data], lenient: true })
+    config = await configFromStream(quadStream)
+  } else {
+    config =  data
   }
+  return config
+}
 
-  const configuration = await remapConfigToJSON(feedUrl)
+async function remapConfigToJSON(turtle): Promise<any> {
+  if (typeof turtle === "object") {
+    return turtle
+  }
+  const jsonConfig = ttl2jsonld(turtle)
+  const context = {
+    "@context": {
+      "link": { "@id": "http://w3id.org/mifesto#code", "@type": "@id" },
+      "spec": "http://usefulinc.com/ns/doap#revision",
+      "name": "http://www.w3.org/2000/01/rdf-schema#label",
+      "route": "http://w3id.org/mifesto#hasRoute",
+      "type": { "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "@type": "@id" },
+      "hosts": { "@id": "http://w3id.org/mifesto#hosts", "@type": "@id" },
+      "compatibleMedia": { "@id": "http://w3id.org/mifesto#compatibleMedia", "@type": "@id" },
+      "initialColumns": "http://w3id.org/mifesto#initialColumns",
+      "initialRows": "http://w3id.org/mifesto#initialRows"
+    }
+  }
+  const flattened = await jsonld.flatten(jsonConfig)
+  const compacted = await jsonld.compact(flattened, context)
+  const piralConfig = {
+    items: compacted["@graph"] || [compacted],
+    feed: "sample"
+  }
+  return piralConfig
+}
+
+function configFromStream(quadStream) {
+  return new Promise((resolve, reject) => {
+    let configuration = ""
+    quadStream.on('data', (quad) => {
+      configuration += `<${quad.subject.value}> `
+      configuration += `<${quad.predicate.value}> `
+      if (quad.object.value.startsWith("http")) {
+        configuration += `<${quad.object.value}> . `
+      } else {
+        configuration += `"${quad.object.value}" . `
+      }
+    })
+    quadStream.on('end', () => resolve(configuration))
+    quadStream.on('error', (err) => {
+      console.log('error', err)
+      reject(err)
+    })
+  })
+}
+
+async function returnItems(configuration) {
+  return configuration.items
+}
+
+
+async function makePiral(configuration) {
+  console.log('configuration :>> ', configuration);
   const p = createPiral({
     requestPilets() {
-      return remapConfigToJSON(feedUrl).then(i => i.items)
+      return returnItems(configuration)
     },
     plugins: [createAecoStoreApi(), createContainersApi()]
   });
   p.root.setData("CONSTANTS", CONSTANTS)
-  console.log('configuration :>> ', configuration);
   p.root.setData("CONFIGURATION", configuration)
   return p
 }
 
-function getRoutes(items) {
-  const routes = {}
-  items.filter(item => item.route).forEach(item => {
-    routes[item.route] = item.hosts
-  })
-  return routes
-}
-
 const App = () => {
-  const [feedUrl, setFeedUrl] = React.useState(CONSTANTS.FEEDURL)
+  const [feedUrl, setFeedUrl] = React.useState(CONSTANTS.DEFAULT_FEEDURL)
+  const [id, setId] = React.useState(v4())
   // const [feedUrl, setFeedUrl] = React.useState(undefined)
   const [piral, setPiral] = React.useState(undefined)
   const [conceptLoading, setConceptLoading] = React.useState(false)
-
-
-  function createNewConfiguration(config) {
-    const p = createPiral({
-      requestPilets() {
-        return Promise.resolve(config.items)
-      },
-      plugins: [createAecoStoreApi(), createContainersApi()]
-    });
-    p.root.setData("CONSTANTS", CONSTANTS)
-    p.root.setData("CONFIGURATION", config)
-    setPiral(p)
-  }
+  const [running, setRunning] = React.useState(false)
 
   React.useEffect(() => {
     if (piral === undefined && feedUrl) {
-      // const p = makePiral(feedUrl)
-      makePiral(feedUrl).then(res => {
-        setPiral(res)
-        const routes = getRoutes(res.root.getData("CONFIGURATION").items)
-      })
-      // setPiral(p)
+      getTtl(feedUrl)
+        .then((ttl) => remapConfigToJSON(ttl))
+        .then(i => makePiral(i))
+        .then(res => setPiral(res))
+        .then(i => setId(v4()))
     }
+
+
   }, [piral, feedUrl])
 
   return (
-    <div>
+    <div id={id}>
       {piral ? (
         <div>
-            {(feedUrl !== "https://pod.werbrouck.me/aecostore/configurations/welcome") ? (
-            <Fab style={{position: "fixed", right: 10, bottom: 10}} color="primary" aria-label="add" onClick={() => { setFeedUrl("https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/welcome.ttl"); setPiral(undefined) }}>
-            <AddBusinessIcon sx={{ mr: 1 }} />
+          {(feedUrl !== "https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/welcome.ttl") ? (
+            <Fab style={{ position: "fixed", right: 10, bottom: 10 }} color="primary" aria-label="add" onClick={() => { setFeedUrl("https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/welcome.ttl"); setPiral(undefined) }}>
+              <AddBusinessIcon sx={{ mr: 1 }} />
             </Fab>
-            ) : (
-              <></>
-            )}
-          <PiralComponent piral={piral} setConceptLoading={setConceptLoading} setFeedUrl={setFeedUrl} setPiral={setPiral} createNewConfiguration={createNewConfiguration}/>
+          ) : (
+            <></>
+          )}
+          <PiralComponent piral={piral} setConceptLoading={setConceptLoading} setFeedUrl={setFeedUrl} setPiral={setPiral} />
         </div>
       ) : (
         <div>
@@ -218,9 +183,7 @@ const App = () => {
   )
 }
 
-
-
-const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral, createNewConfiguration}: { piral: PiralInstance, setConceptLoading, setFeedUrl, setPiral, createNewConfiguration }) => {
+const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral }: { piral: PiralInstance, setConceptLoading, setFeedUrl, setPiral }) => {
   // piral.root.setDataGlobal(CONSTANTS.ACTIVE_PROJECT, projectData)
 
   // piral.on('store-data', async ({ name, value }) => {
@@ -236,8 +199,8 @@ const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral, create
 
   piral.on('store-data', ({ name, value }) => {
     if (name == CONSTANTS.FEEDURL) {
-      setPiral(undefined)
       setFeedUrl(value)
+      setPiral(undefined)
     }
   })
 
@@ -252,7 +215,7 @@ const PiralComponent = ({ piral, setConceptLoading, setFeedUrl, setPiral, create
       <SetComponent name="Layout" component={Layout} />
       <SetComponent name="DashboardContainer" component={DashboardContainer} />
       <SetComponent name="DashboardTile" component={DashboardTile} />
-      <SetComponent name="MenuContainer" component={MenuContainer}/>
+      <SetComponent name="MenuContainer" component={MenuContainer} />
       <SetComponent name="LoadingIndicator" component={Loader} />
       <SetComponent name="ErrorInfo" component={ErrorInfo} />
       <SetComponent name="NotificationsHost" component={NotificationsHost} />
