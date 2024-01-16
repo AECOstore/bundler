@@ -1,5 +1,5 @@
 # Bundler of the MIFESTO framework
-This is the Bundler application for the Mifesto (Micro frontend store) framework. 
+This is the Bundler application for the Mifesto (Micro frontend store) framework. An introduction to the basic concepts of Mifesto is shown below. 
 
 ## What is Mifesto?
 

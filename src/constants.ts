@@ -8,7 +8,7 @@ const data = {
     SPARQL_ENDPOINTS: "http://example.org/sparql_endpoints",
     ACTIVE_DOCUMENTS: "http://example.org/active_documents",
     FEEDURL: "http://example.org/feedurl",
-    DEFAULT_FEEDURL: "https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/damage-enrichment.ttl",
+    DEFAULT_FEEDURL: "https://raw.githubusercontent.com/AECOstore/RESOURCES/main/configurations/welcome.ttl",
     SELECTED_CONCEPTS: "http://example.org/selected_concepts",
     SELECTED_REFERENCES: "http://example.org/selected_references",
     DEFAULT_PASSWORD: "test123",
